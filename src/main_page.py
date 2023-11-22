@@ -1,6 +1,10 @@
 from functools import partial
 # Description of the component saved here.
+# This component allows the User to create and navigate a map in an Anytime way. This means that the given path from the start to the destination will be refined over time, until the optimum is reached.
 
+# The component translates the map in a unified-planning Problem and then send it to be solved in an Anytime way to another component. Every result returned is then displayed to the user both graphically and textually.
+
+# This component should be linked to the aiplan4eu-unified-planning-server, linking the Anytime functionality.
 
 import justpy as jp
 
