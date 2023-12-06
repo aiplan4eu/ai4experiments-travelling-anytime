@@ -66,7 +66,7 @@ class Gui():
         self.add_locations_to_graph(N_STARTING_LOCATIONS, display_graph=False)
 
         self.start = "L_1"
-        self.destination = f"L_{N_STARTING_LOCATIONS}"
+        self.destination = {f"L_{N_STARTING_LOCATIONS}"}
 
     def add_locations_to_graph(self, number_of_locations: int, display_graph: bool = True):
         assert number_of_locations > 0
@@ -104,7 +104,7 @@ class Gui():
             self.graph.add_edge(*edge, weight=weight)
         # self.graph.add_edges_from(map(lambda x: (node_mapping.get(x[0]), node_mapping.get(x[1])), random_graph.edges))
         self.start = f"L_{random.randint(1, len(self.graph))}"
-        self.destination = f"L_{random.randint(1, len(self.graph))}"
+        self.destination = {f"L_{random.randint(1, len(self.graph))}", f"L_{random.randint(1, len(self.graph))}", f"L_{random.randint(1, len(self.graph))}"}
         self.display_graph(True)
 
     def display_graph(self, reset_plan = False):
@@ -134,10 +134,15 @@ class Gui():
         pos = nx.kamada_kawai_layout(self.graph, scale=scale_value)
         fig = plt.figure(figsize = FIGSIZE)
         ax = fig.add_subplot()
-        color_map = {self.start: START_NODE_COLOR, self.destination: DESTINATION_NODE_COLOR}
+        # color_map = {self.start: START_NODE_COLOR, self.destination: DESTINATION_NODE_COLOR}
+        color_map = {self.start: START_NODE_COLOR}
+        for d in self.destination:
+            color_map.setdefault(d, DESTINATION_NODE_COLOR)
         if self.plans:
-            path = set((str(ai.actual_parameters[1]) for ai in self.plans[-1].actions[0:-1]))
-            node_colors = [color_map.get(n, NORMAL_NODE_COLOR) if n not in path else PATH_COLOR for n in self.graph ]
+            path = (str(ai.actual_parameters[1]) for ai in self.plans[-1].actions[0:-1])
+            for p in path:
+                color_map.setdefault(p, PATH_COLOR)
+            node_colors = [color_map.get(n, NORMAL_NODE_COLOR) for n in self.graph]
         else:
             node_colors = [color_map.get(n, NORMAL_NODE_COLOR) for n in self.graph]
 
@@ -166,10 +171,10 @@ class Gui():
         if self.plan_div is not None:
             self.plan_div.delete_components()
             if self.plans:
-                for i, (plan, cost) in enumerate(zip(self.plans, self.plans_cost)):
+                for i, (plan, cost) in enumerate(zip(self.plans, self.plans_cost), start=1):
                     _ = jp.P(
                         a=self.plan_div,
-                        text=f"Found sequence number: {i} that connects {self.start} to {self.destination}!",
+                        text=f" - Sequence {i}:",
                         classes=PLAN_PART_P_CLASS,
                         style=PLAN_PART_P_STYLE,
                     )
@@ -183,7 +188,7 @@ class Gui():
                         )
                     _ = jp.P(
                         a=self.plan_div,
-                        text=f"After this sequence you arrived at: {self.destination}! The calculated cost is: {cost}",
+                        text=f"After this sequence you visited: {', '.join(map(str, self.destination))}! The calculated cost is: {cost}",
                         classes=PLAN_PART_P_CLASS,
                         style=PLAN_PART_P_STYLE,
                     )

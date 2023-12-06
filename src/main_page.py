@@ -20,16 +20,18 @@ TITLE_TEXT_DIV_STYLE = "font-size: 80px; text-align: center; text-weight: bold;"
 DESCRIPTION_STYLE = "margin-top: 15px; font-size: 16px;" + LEFT_MARGIN + RIGHT_MARGIN
 DESCRIPTION_TEXT = """
 Travelling-anytime demo: this demo allows you to create and navigate a map with specified distances on the connections.
+You can specify multiple destinations to visit.
 The text to the left of the buttons specifies the precise behavior of the button itself:
  * Add Locations(N): adds N locations to the map, in numerical order.
  * Remove Locations(N): removes the last N locations from the map; if the start/destination is one of those it will be randomly reassigned.
  * Add Connection(N, M, D): adds the connection between the L_N and L_M and assigns the distance D.
  * Remove Connection(N, M): removes the connection between L_N and L_M.
  * Set Start(N): sets L_N as the starting location; the starting location is represented in GREEN.
- * Set Destination(N): sets L_N as the destination; the destination is represented in RED.
- * Randomize Graph(N, M, MinD, MaxD): creates a new map with N locations, M random connections with random distances in [MinD, MaxD], a random Start and a random Destination.
+ * Set Destination(N): sets L_N as a place to visit; the destination is represented in RED.
+ * Remove Destination(N): removes L_N from the destinations.
+ * Randomize Graph(N, M, MinD, MaxD): creates a new map with N locations, M random connections with random distances in [MinD, MaxD], a random Start and 3 random Destinations.
  * RESET: restores the map to it's initial configuration.
- * NAVIGATE: prints the plans to go from the starting location to the destination; following the given map and minimizing the distance. With the passing of time plans should get better and better.
+ * NAVIGATE: prints the plans to go from the starting location and visit all the destinations; following the given map and minimizing the distance. With the passing of time plans should get better and better.
 """
 SINGLE_DESCRIPTION_STYLE = LEFT_MARGIN + RIGHT_MARGIN
 
@@ -422,7 +424,8 @@ def main_page(gui: Gui):
                 if value <= defined_locations:
                     set_destination_text.value = SET_DESTINATION_TEXT_PLACEHOLDER
                     if gui.mode == Mode.GENERATING_PROBLEM:
-                        gui.destination = f"L_{value}"
+                        # gui.destination = f"L_{value}"
+                        gui.destination.add(f"L_{value}")
                         gui.display_graph(True)
                 else:
                     set_destination_text.value = f"Err: > {defined_locations}"
@@ -432,6 +435,45 @@ def main_page(gui: Gui):
             set_destination_text.value = "Err: NAN"
 
     set_destination_button.on('click', partial(set_destination_button_click, set_destination_text, gui))
+
+    # Remove Destination
+    REMOVE_DESTINATION_TEXT_PLACEHOLDER = ""
+    remove_destination_text = jp.Input(
+        a=actions_div,
+        placeholder=REMOVE_DESTINATION_TEXT_PLACEHOLDER,
+        classes=TEXT_INPUT_P_CLASS,
+        style=TEXT_INPUT_P_STYLE,
+    )
+    remove_destination_button = jp.Input(
+        a=actions_div,
+        value="Remove Destination",
+        type="submit",
+        classes=ADD_BUTTON_CLASS,
+        style=ADD_BUTTON_STYLE,
+    )
+
+    def remove_destination_button_click(remove_destination_text: jp.Input, gui: Gui, component, msg):
+        text = remove_destination_text.value
+        gui.logger.info("Clicked remove_destination: " + text + f" with mode: {gui.mode}")
+        try:
+            graph = gui.graph
+            defined_locations = len(graph)
+            value = int(text)
+            if value > 0:
+                if value <= defined_locations:
+                    remove_destination_text.value = REMOVE_DESTINATION_TEXT_PLACEHOLDER
+                    if gui.mode == Mode.GENERATING_PROBLEM:
+                        # gui.destination = f"L_{value}"
+                        gui.destination.discard(f"L_{value}")
+                        gui.display_graph(True)
+                else:
+                    remove_destination_text.value = f"Err: > {defined_locations}"
+            else:
+                remove_destination_text.value = "Err: < 0"
+        except ValueError:
+            remove_destination_text.value = "Err: NAN"
+
+    remove_destination_button.on('click', partial(remove_destination_button_click, remove_destination_text, gui))
 
     # Randomize Graph
     RANDOMIZE_TEXT_PLACEHOLDER = ""

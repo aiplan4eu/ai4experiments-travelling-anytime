@@ -30,6 +30,7 @@ def planning(engine: GrapheneEngine, gui: Gui, reload_page):
     # - `connected` is a static fluent for modeling the graph connectivity relation
     robot_at = Fluent("robot_at", BoolType(), position=Location)
     connected = Fluent("connected", BoolType(), l_from=Location, l_to=Location)
+    visited = Fluent("visited", pos=Location)
     distance = Fluent("distance", IntType(), l_from=Location, l_to=Location)
     total_distance = Fluent("total_distance", IntType())
 
@@ -37,6 +38,7 @@ def planning(engine: GrapheneEngine, gui: Gui, reload_page):
     # The default values are optional and can be any value (not forcing closed-world assumption)
     problem.add_fluent(robot_at, default_initial_value=False)
     problem.add_fluent(connected, default_initial_value=False)
+    problem.add_fluent(visited, default_initial_value=False)
     problem.add_fluent(distance, default_initial_value=0)
     problem.add_fluent(total_distance, default_initial_value=0)
 
@@ -48,6 +50,7 @@ def planning(engine: GrapheneEngine, gui: Gui, reload_page):
     move.add_precondition(robot_at(l_from))
     move.add_effect(robot_at(l_from), False)
     move.add_effect(robot_at(l_to), True)
+    move.add_effect(visited(l_to), True)
     move.add_increase_effect(total_distance, distance(l_from, l_to))
     problem.add_action(move)
 
@@ -59,6 +62,7 @@ def planning(engine: GrapheneEngine, gui: Gui, reload_page):
 
     # Setting the initial location
     problem.set_initial_value(robot_at(locations[gui.start]), True)
+    problem.set_initial_value(visited(locations[gui.start]), True)
 
     # Initializing the connectivity relations by iterating over the graph edges
     for (f, t, d) in gui.graph.edges(data=True):
@@ -69,7 +73,8 @@ def planning(engine: GrapheneEngine, gui: Gui, reload_page):
         problem.set_initial_value(connected(locations[str(t)], locations[str(f)]), True)
 
     # Setting the goal
-    problem.add_goal(robot_at(locations[gui.destination]))
+    for d in gui.destination:
+        problem.add_goal(visited(locations[d]))
     metric = MinimizeExpressionOnFinalState(total_distance)
     problem.add_quality_metric(metric)
 
@@ -83,9 +88,9 @@ def planning(engine: GrapheneEngine, gui: Gui, reload_page):
                 val_res = validator.validate(problem, plan)
                 if val_res.metric_evaluations is not None:
                     cost = val_res.metric_evaluations[metric]
-        if plan not in plans:
-            plans.add(plan)
-            gui.plans.append(plan)
-            gui.plans_cost.append(cost)
-            asyncio.run(reload_page())
-            # sleep(2)
+            if plan not in plans:
+                plans.add(plan)
+                gui.plans.append(plan)
+                gui.plans_cost.append(cost)
+                asyncio.run(reload_page())
+                sleep(3)
